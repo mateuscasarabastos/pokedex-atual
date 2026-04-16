@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokéDex Ultimate - Geração & Dex</title>
+    <style>
+        /* CSS - Estilização Geral */
+        body { font-family: 'Segoe UI', sans-serif; background: #2c3e50; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        
+        /* Menu de Gerações (Canto Superior Direito) */
+        .menu-geracoes { position: fixed; top: 10px; right: 10px; background: #e74c3c; padding: 10px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 100; color: white; border: 2px solid #fff; }
+        .menu-geracoes select { padding: 5px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
+
+        /* Container Principal */
+        .pokedex { background: #ecf0f1; width: 90%; max-width: 700px; border-radius: 20px; padding: 20px; border: 10px solid #e74c3c; margin-top: 60px; margin-bottom: 120px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        
+        .search-bar { display: flex; gap: 10px; margin-bottom: 15px; background: #bdc3c7; padding: 10px; border-radius: 10px; align-items: center; }
+        input[type="text"] { flex: 1; padding: 8px; border-radius: 5px; border: none; }
+        
+        #content { background: white; padding: 15px; border-radius: 10px; border: 3px solid #34495e; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        section { background: #fdfdfd; padding: 10px; border-radius: 5px; border-left: 4px solid #3498db; box-shadow: inset 0 0 5px #ddd; }
+
+        /* Tipos e Badges */
+        .type-badge { display: inline-block; padding: 4px 10px; border-radius: 15px; color: white; font-size: 11px; margin: 2px; text-transform: uppercase; }
+        .ability-btn { background: #34495e; color: white; border: none; padding: 5px; margin: 2px; border-radius: 4px; cursor: help; font-size: 11px; }
+
+        /* Barra Inferior (National Dex) */
+        .bottom-dex-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 80px; background: #34495e; display: flex; overflow-x: auto; align-items: center; padding: 5px; gap: 10px; border-top: 4px solid #e74c3c; z-index: 100; scroll-behavior: smooth; }
+        .dex-item { min-width: 120px; background: #ecf0f1; padding: 5px; border-radius: 5px; text-align: center; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; border: 2px solid transparent; }
+        .dex-item:hover { background: #2ecc71; transform: translateY(-5px); border-color: white; }
+
+        /* Imagens e Animações */
+        #pokeImg { width: 150px; display: block; margin: 0 auto; }
+        .evo-flex { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; background: #eee; border-radius: 10px; padding: 5px; }
+        .evo-item img { width: 50px; }
+
+        /* Cores de Tipos */
+        .fire { background: #F08030; } .water { background: #6890F0; } .grass { background: #78C850; }
+        .electric { background: #F8D030; } .ice { background: #98D8D8; } .fighting { background: #C03028; }
+        .poison { background: #A040A0; } .ground { background: #E0C068; } .flying { background: #A890F0; }
+        .psychic { background: #F85888; } .bug { background: #A8B820; } .rock { background: #B8A038; }
+        .ghost { background: #705898; } .dragon { background: #7038F8; } .dark { background: #705848; }
+        .steel { background: #B8B8D0; } .fairy { background: #EE99AC; } .normal { background: #A8A878; }
+    </style>
+</head>
+<body>
+
+    <div class="menu-geracoes">
+        <label>Geração:</label>
+        <select id="genSelect" onchange="loadGeneration()">
+            <option value="1">Kanto (Gen 1)</option>
+            <option value="2">Johto (Gen 2)</option>
+            <option value="3">Hoenn (Gen 3)</option>
+            <option value="4">Sinnoh (Gen 4)</option>
+            <option value="5">Unova (Gen 5)</option>
+            <option value="6">Kalos (Gen 6)</option>
+            <option value="7">Alola (Gen 7)</option>
+            <option value="8">Galar (Gen 8)</option>
+            <option value="9">Paldea (Gen 9)</option>
+        </select>
+    </div>
+
+    <div class="pokedex">
+        <div class="search-bar">
+            <input type="text" id="pokeInput" placeholder="Nome ou Número...">
+            <button onclick="fetchPokemon()">BUSCAR</button>
+            <label style="font-size: 11px;"><input type="checkbox" id="shinyToggle"> Shiny</label>
+        </div>
+
+        <div id="content" style="display: none;">
+            <center><h2 id="pokeName" style="text-transform: capitalize; margin: 5px;"></h2></center>
+            <div id="types" style="text-align: center;"></div>
+            
+            <img id="pokeImg" src="" alt="">
+
+            <div class="grid">
+                <section>
+                    <h3>Stats</h3>
+                    <div id="stats" style="font-size: 12px; font-family: monospace;"></div>
+                </section>
+                <section>
+                    <h3>Habilidades</h3>
+                    <div id="abilities"></div>
+                </section>
+            </div>
+
+            <section style="margin: 10px 0;">
+                <h3>Defesa Elementar</h3>
+                <div id="weakness-box" style="font-size: 12px;">
+                    <strong>Fraquezas:</strong> <span id="weak"></span><br>
+                    <strong>Imunidades:</strong> <span id="immune"></span>
+                </div>
+            </section>
+
+            <section>
+                <h3>Linha Evolutiva</h3>
+                <div id="evoChain" class="evo-flex"></div>
+            </section>
+        </div>
+    </div>
+
+    <div id="bottomDex" class="bottom-dex-bar">
+        </div>
+
+    <script>
+        const genData = {
+            1: { start: 1, end: 151 },
+            2: { start: 152, end: 251 },
+            3: { start: 252, end: 386 },
+            4: { start: 387, end: 493 },
+            5: { start: 494, end: 649 },
+            6: { start: 650, end: 721 },
+            7: { start: 722, end: 809 },
+            8: { start: 810, end: 905 },
+            9: { start: 906, end: 1025 }
+        };
+
+        // Carrega a lista na barra inferior ao abrir
+        window.onload = () => loadGeneration();
+
+        async function loadGeneration() {
+            const gen = document.getElementById('genSelect').value;
+            const { start, end } = genData[gen];
+            const bottomDex = document.getElementById('bottomDex');
+            bottomDex.innerHTML = "Carregando...";
+
+            let html = "";
+            for (let i = start; i <= end; i++) {
+                // Usando uma forma otimizada para carregar nomes sem travar o browser
+                html += `<div class="dex-item" onclick="quickSearch(${i})">
+                            ${String(i).padStart(3, '0')}: Poké #${i}
+                         </div>`;
+            }
+            bottomDex.innerHTML = html;
+            
+            // Tenta buscar nomes reais para a barra inferior (opcional para performance)
+            updateDexNames(start, end);
+        }
+
+        async function updateDexNames(start, end) {
+            // Isso atualiza os nomes na barra inferior aos poucos
+            for (let i = start; i <= end; i++) {
+                const item = document.querySelectorAll('.dex-item')[i - start];
+                if(!item) break;
+                // Busca simplificada apenas para o nome
+                fetch(`https://pokeapi.co/api/v2/pokemon-species/${i}/`)
+                    .then(res => res.json())
+                    .then(data => {
+                        item.innerText = `${String(i).padStart(3, '0')}: ${data.name.toUpperCase()}`;
+                    });
+            }
+        }
+
+        function quickSearch(id) {
+            document.getElementById('pokeInput').value = id;
+            fetchPokemon();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function fetchPokemon() {
+            const input = document.getElementById('pokeInput').value.toLowerCase().trim();
+            if (!input) return;
+
+            try {
+                const resp = await fetch(`https://pokeapi.co/api/v2/pokemon/${input}`);
+                const data = await resp.json();
+                renderPokeData(data);
+            } catch (err) { alert("Erro ao buscar!"); }
+        }
+
+        async function renderPokeData(data) {
+            document.getElementById('content').style.display = "block";
+            const isShiny = document.getElementById('shinyToggle').checked;
+            
+            document.getElementById('pokeName').innerText = `${data.name} #${data.id}`;
+            document.getElementById('pokeImg').src = isShiny ? data.sprites.front_shiny : data.sprites.front_default;
+            
+            // Tipos
+            document.getElementById('types').innerHTML = data.types.map(t => 
+                `<span class="type-badge ${t.type.name}">${t.type.name}</span>`
+            ).join('');
+
+            // Stats
+            document.getElementById('stats').innerHTML = data.stats.map(s => 
+                `<div>${s.stat.name.toUpperCase()}: ${s.base_stat}</div>`
+            ).join('');
+
+            // Habilidades
+            const abDiv = document.getElementById('abilities');
+            abDiv.innerHTML = '';
+            for(const a of data.abilities) {
+                const btn = document.createElement('button');
+                btn.className = 'ability-btn';
+                btn.innerText = a.ability.name;
+                btn.onclick = async () => {
+                    const r = await fetch(a.ability.url);
+                    const d = await r.json();
+                    alert(d.effect_entries.find(e => e.language.name === 'en').short_effect);
+                };
+                abDiv.appendChild(btn);
+            }
+
+            // Efetividade
+            calculateEff(data.types);
+            
+            // Evolução
+            const specRes = await fetch(data.species.url);
+            const specData = await specRes.json();
+            loadEvolutions(specData.evolution_chain.url);
+        }
+
+        async function calculateEff(types) {
+            let mult = {};
+            for(const t of types) {
+                const r = await fetch(t.type.url);
+                const d = await r.json();
+                d.damage_relations.double_damage_from.forEach(type => mult[type.name] = (mult[type.name] || 1) * 2);
+                d.damage_relations.no_damage_from.forEach(type => mult[type.name] = 0);
+            }
+            
+            const weak = [], immune = [];
+            for(const t in mult) {
+                if(mult[t] > 1) weak.push(`${t} ${mult[t]}x`);
+                if(mult[t] === 0) immune.push(t);
+            }
+            document.getElementById('weak').innerText = weak.join(', ') || 'Nenhuma';
+            document.getElementById('immune').innerText = immune.join(', ') || 'Nenhuma';
+        }
+
+        async function loadEvolutions(url) {
+            const r = await fetch(url);
+            const d = await r.json();
+            const evoDiv = document.getElementById('evoChain');
+            evoDiv.innerHTML = "";
+            
+            let curr = d.chain;
+            while(curr) {
+                const name = curr.species.name;
+                evoDiv.innerHTML += `<div class="evo-item"><strong>${name}</strong></div>`;
+                curr = curr.evolves_to[0];
+                if(curr) evoDiv.innerHTML += " ➔ ";
+            }
+        }
+    </script>
+</body>
+</html>
